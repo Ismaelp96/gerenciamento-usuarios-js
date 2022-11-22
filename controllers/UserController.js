@@ -1,97 +1,98 @@
 class UserController {
-   constructor(formId, tableId) {
-      this.formEl = document.getElementById(formId);
-      this.tableEl = document.getElementById(tableId);
-      this.onSubmit();
-   }
+  constructor(formId, tableId) {
+    this.formEl = document.getElementById(formId);
+    this.tableEl = document.getElementById(tableId);
+    this.onSubmit();
+  }
 
-   onSubmit() {
-      this.formEl.addEventListener("submit", (event) => {
-         event.preventDefault();
-         let btn = this.formEl.querySelector("[type=submit]");
-         btn.disabled = true;
+  onSubmit() {
+    this.formEl.addEventListener("submit", (event) => {
+      event.preventDefault();
+      let btn = this.formEl.querySelector("[type=submit]");
+      btn.disabled = true;
 
-         let values = this.getValues();
+      let values = this.getValues();
 
-         this.getPhoto().then(
-            (content) => {
-               values.photo = content;
+      if (!values) return false;
+      this.getPhoto().then(
+        (content) => {
+          values.photo = content;
 
-               this.addLine(values);
-               this.formEl.reset();
-               btn.disabled = false;
-            },
-            (e) => {
-               console.error(e);
-            }
-         );
-      });
-   }
-
-   getPhoto() {
-      return new Promise((resolve, reject) => {
-         let fileReader = new FileReader();
-
-         let elements = [...this.formEl.elements].filter((item) => {
-            if (item.name === "photo") {
-               return item;
-            }
-         });
-
-         let file = elements[0].files[0];
-         fileReader.onload = () => {
-            resolve(fileReader.result);
-         };
-         fileReader.onerror = (e) => {
-            reject(e);
-         };
-         if (file) {
-            fileReader.readAsDataURL(file);
-         } else {
-            resolve("dist/img/boxed-bg.jpg");
-         }
-      });
-   }
-   getValues() {
-      let user = {};
-      let isValid = true;
-      [...this.formEl.elements].forEach((field, index) => {
-         if (
-            ["name", "email", "password"].indexOf(field.name) > -1 &&
-            !field.value
-         ) {
-            field.parentElement.classList.add("has-error");
-            isValid = false;
-         }
-
-         if (field.name == "gender") {
-            if (field.checked) {
-               user[field.name] = field.value;
-            }
-         } else if (field.name == "admin") {
-            user[field.name] = field.checked;
-         } else {
-            user[field.name] = field.value;
-         }
-      });
-      if (!isValid) {
-         return false;
-      }
-      return new User(
-         user.name,
-         user.gender,
-         user.birth,
-         user.country,
-         user.email,
-         user.password,
-         user.photo,
-         user.admin
+          this.addLine(values);
+          this.formEl.reset();
+          btn.disabled = false;
+        },
+        (e) => {
+          console.error(e);
+        }
       );
-   }
+    });
+  }
 
-   addLine(dataUser) {
-      let tr = document.createElement("tr");
-      tr.innerHTML = `
+  getPhoto() {
+    return new Promise((resolve, reject) => {
+      let fileReader = new FileReader();
+
+      let elements = [...this.formEl.elements].filter((item) => {
+        if (item.name === "photo") {
+          return item;
+        }
+      });
+
+      let file = elements[0].files[0];
+      fileReader.onload = () => {
+        resolve(fileReader.result);
+      };
+      fileReader.onerror = (e) => {
+        reject(e);
+      };
+      if (file) {
+        fileReader.readAsDataURL(file);
+      } else {
+        resolve("dist/img/boxed-bg.jpg");
+      }
+    });
+  }
+  getValues() {
+    let user = {};
+    let isValid = true;
+    [...this.formEl.elements].forEach((field, index) => {
+      if (["name", "email", "password"].indexOf(field.name) > -1 && !field.value) {
+        field.parentElement.classList.add("has-error");
+        isValid = false;
+      }
+
+      if (field.name == "gender") {
+        if (field.checked) {
+          user[field.name] = field.value;
+        }
+      } else if (field.name == "admin") {
+        user[field.name] = field.checked;
+      } else {
+        user[field.name] = field.value;
+      }
+    });
+    if (!isValid) {
+      return false;
+    }
+    return new User(
+      user.name,
+      user.gender,
+      user.birth,
+      user.country,
+      user.email,
+      user.password,
+      user.photo,
+      user.admin
+    );
+  }
+
+  addLine(dataUser) {
+    let tr = document.createElement("tr");
+
+    tr.dataset.user = JSON.stringify(dataUser);
+
+    tr.innerHTML = `
      <td>
        <img
          src="${dataUser.photo}"
@@ -119,6 +120,22 @@ class UserController {
      </td>
      `;
 
-      this.tableEl.appendChild(tr);
-   }
+    this.tableEl.appendChild(tr);
+
+    this.updateCount();
+  }
+
+  updateCount() {
+    let numberUsers = 0;
+    let numberAdmin = 0;
+
+    [...this.tableEl.children].forEach((tr) => {
+      numberUsers++;
+
+      let user = JSON.parse(tr.dataset.user);
+      if (user._admin) numberAdmin++;
+    });
+    document.getElementById("number-users").innerHTML = numberUsers;
+    document.getElementById("number-users-admin").innerHTML = numberAdmin;
+  }
 }
